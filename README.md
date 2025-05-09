@@ -2,7 +2,11 @@
 Only Linux and Docker! Made for the RFID-RC522 simular models maybe will work too.
 A solution to "Login" into a room.
 
-## 1. Install the requirements and repo
+
+
+# Installation
+
+## 1. Install the requirements and repository
 #### Updating and installing the requirements:
 ```
 sudo apt update && sudo apt install python3 git nano tmux docker.io docker-compose
@@ -82,7 +86,7 @@ FOREIGN KEY (chid) REFERENCES chips(chid));
 ```
 cd server
 ```
-- Edit chipsync.py and fill out the host's, password's etc.
+- Edit chipsync.py and fill out the host's, password's etc. AND THE ROOMID!
 ```
 sudo nano chipsync.py
 ```
@@ -90,7 +94,7 @@ sudo nano chipsync.py
 ```
 sudo crontab -e
 ```
-At the end, add the lines:
+- At the end, add the lines:
 ```
 0 * * * * /usr/bin/python3 /path/to/chipsync.py
 0 * * * * /usr/bin/python3 /path/to/mastersync.py
@@ -113,6 +117,10 @@ sudo tmux
 sudo python3 login.py
 ```
 
-## 4. You're done.
-### Well done mate
+## 4. Filling in information
+##### To create, change or delete entries in the students, chips, rooms and assignments tables use the entrieinteractiontool.py
+```
+sudo python3 entrieinteractiontool.py
+```
+
 
