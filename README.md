@@ -13,7 +13,7 @@ sudo apt update && sudo apt install python3 git nano tmux docker.io docker-compo
 ```
 #### Cloning the repository and changing into it:
 ```
-sudo git clone ... && cd ...
+sudo git clone https://github.com/Tellertomate/Roomlogin.git && cd Roomlogin
 ```
 
 ## 2. Create Databases
@@ -31,9 +31,8 @@ sudo nano docker-compose.yml
 sudo docker-compose up -d
 ```
 #### Linux:
-```
-sudo apt install mariadb-server usw bla
-```
+Documentary:
+https://www.digitalocean.com/community/tutorials/how-to-install-mariadb-on-ubuntu-20-04
 
 ### Create and set up the databases
 #### Master: (MYSQL)
@@ -118,7 +117,7 @@ sudo python3 login.py
 ```
 
 ## 4. Filling in information
-##### To create, change or delete entries in the students, chips, rooms and assignments tables use the entrieinteractiontool.py
+- To create, change or delete entries in the students, chips, rooms and assignments tables use the entrieinteractiontool.py
 ```
 sudo python3 entrieinteractiontool.py
 ```
