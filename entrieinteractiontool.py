@@ -42,17 +42,17 @@ def scan_chip():
         return input("RFID module not available. Enter chid manually: ")
 
 # ------------------------------
-# Allgemeine Suchfunktion für UPDATE/DELETE (sucht in allen relevanten Spalten)
+# General search function for UPDATE/DELETE (searches in all relevant columns)
 def generic_entry_search(conn, table, columns):
     """
-    Sucht in der angegebenen Tabelle in allen angegebenen Spalten mithilfe von CONCAT.
-    table: Tabellenname (z.B. students)
+    Searches in the specified table in all specified columns using CONCAT.
+    table: Table name (e.g. students)
     columns: Liste der Spalten, z.B. ["stid", "firstname", "secondname"]
     """
     cursor = conn.cursor(dictionary=True)
     search_term = input("Enter search term (will be compared against all relevant fields): ").strip()
     like_term = f"%{search_term}%"
-    # CONCAT der Spalten mit Leerzeichen dazwischen
+    # CONCAT of the columns with spaces in between
     concat_expr = "CONCAT(" + ", ' ', ".join(columns) + ")"
     query = f"SELECT * FROM {table} WHERE {concat_expr} LIKE %s"
     cursor.execute(query, (like_term,))
@@ -67,7 +67,7 @@ def generic_entry_search(conn, table, columns):
     return results
 
 # ------------------------------
-# CRUD für Students
+# CRUD for students
 def create_student(conn):
     first = input("Enter student's first name: ")
     second = input("Enter student's last name: ")
@@ -135,7 +135,7 @@ def delete_student(conn):
     cursor.close()
 
 # ------------------------------
-# CRUD für Chips
+# CRUD for chips
 def create_chip(conn):
     chid = scan_chip()
     first = input("Enter first name for chip owner: ")
@@ -219,7 +219,7 @@ def delete_chip(conn):
     cursor.close()
 
 # ------------------------------
-# CRUD für Rooms
+# CRUD for rooms
 def create_room(conn):
     name = input("Enter room name: ")
     cursor = conn.cursor()
@@ -284,7 +284,7 @@ def delete_room(conn):
     cursor.close()
 
 # ------------------------------
-# CRUD für assignments
+# CRUD for assignments
 def create_assignments(conn):
     # Auswahl des Studenten über generic search (sucht in students)
     print("Select a student for the new assignments:")
@@ -300,7 +300,7 @@ def create_assignments(conn):
         print("Invalid input.")
         return
     selected_student = students[sel-1]
-    # Scan den neuen Chip (chid)
+    # Scan the new Chip (chid)
     print("Scan the new chip for the assignments entry:")
     new_chid = scan_chip()
     cursor = conn.cursor()
@@ -325,7 +325,7 @@ def update_assignments(conn):
         return
     cursor = conn.cursor(dictionary=True)
     if sel == 1:
-        # Änderung des Studenten: Zuerst scannt man den zugehörigen Chip, um den Eintrag zu identifizieren.
+        # Change the student: First scan the associated chip to identify the entry.
         print("Scan the chip (chid) to identify the assignments entry:")
         target_chid = scan_chip()
         cursor.execute("SELECT oid, stid, chid FROM assignments WHERE chid = %s", (target_chid,))
@@ -362,7 +362,7 @@ def update_assignments(conn):
             conn.rollback()
         cursor.close()
     elif sel == 2:
-        # Änderung des Chips: Zuerst wählen Sie einen Studenten (mittels generic search) und ändern dann den Chip.
+        # Changing the chip: First select a student (using generic search) and then change the chip.
         print("Select a student for which to update the chip in assignments:")
         students = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
         if not students:
@@ -436,7 +436,7 @@ def generic_search(conn):
     table = input("Enter table name to search (students, chips, rooms, assignments): ").strip()
     term = input("Enter search term: ").strip()
     like_term = f"%{term}%"
-    # Hier wird einfach in allen Spalten gesucht: Wir nutzen CONCAT aller bekannten Spalten je nach Tabelle.
+    # Here we simply search in all columns: We use CONCAT of all known columns depending on the table.
     if table == "students":
         concat_expr = "CONCAT(stid, ' ', firstname, ' ', secondname)"
     elif table == "chips":
@@ -461,7 +461,7 @@ def generic_search(conn):
     cursor.close()
 
 # ------------------------------
-# Main Menu (Zahleneingabe)
+# Main Menu (Number input)
 def main():
     conn = connect_master()
     if not conn:
