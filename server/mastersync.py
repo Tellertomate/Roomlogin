@@ -66,7 +66,7 @@ def get_oid_for_chid(master_db, chid):
     """
     try:
         cursor = master_db.cursor()
-        cursor.execute("SELECT oid FROM zuordnung WHERE chid = %s", (chid,))
+        cursor.execute("SELECT oid FROM assignments WHERE chid = %s", (chid,))
         result = cursor.fetchone()
         cursor.close()
         return result[0] if result else None
