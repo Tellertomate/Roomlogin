@@ -284,10 +284,10 @@ def delete_room(conn):
     cursor.close()
 
 # ------------------------------
-# CRUD für Zuordnung
-def create_zuordnung(conn):
+# CRUD für assignments
+def create_assignments(conn):
     # Auswahl des Studenten über generic search (sucht in students)
-    print("Select a student for the new zuordnung:")
+    print("Select a student for the new assignments:")
     students = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
     if not students:
         return
@@ -301,21 +301,21 @@ def create_zuordnung(conn):
         return
     selected_student = students[sel-1]
     # Scan den neuen Chip (chid)
-    print("Scan the new chip for the zuordnung entry:")
+    print("Scan the new chip for the assignments entry:")
     new_chid = scan_chip()
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO zuordnung (stid, chid) VALUES (%s, %s)",
+        cursor.execute("INSERT INTO assignments (stid, chid) VALUES (%s, %s)",
                        (selected_student['stid'], new_chid))
         conn.commit()
-        print(f"Zuordnung created successfully with student ID {selected_student['stid']} and chid {new_chid}.")
+        print(f"assignments created successfully with student ID {selected_student['stid']} and chid {new_chid}.")
     except mysql.connector.Error as err:
-        print("Error creating zuordnung:", err)
+        print("Error creating assignments:", err)
         conn.rollback()
     cursor.close()
 
-def update_zuordnung(conn):
-    print("What do you want to update in zuordnung?")
+def update_assignments(conn):
+    print("What do you want to update in assignments?")
     print("1: Change student (name)")
     print("2: Change chip")
     try:
@@ -326,12 +326,12 @@ def update_zuordnung(conn):
     cursor = conn.cursor(dictionary=True)
     if sel == 1:
         # Änderung des Studenten: Zuerst scannt man den zugehörigen Chip, um den Eintrag zu identifizieren.
-        print("Scan the chip (chid) to identify the zuordnung entry:")
+        print("Scan the chip (chid) to identify the assignments entry:")
         target_chid = scan_chip()
-        cursor.execute("SELECT oid, stid, chid FROM zuordnung WHERE chid = %s", (target_chid,))
+        cursor.execute("SELECT oid, stid, chid FROM assignments WHERE chid = %s", (target_chid,))
         entry = cursor.fetchone()
         if not entry:
-            print("No zuordnung entry found with that chid.")
+            print("No assignments entry found with that chid.")
             cursor.close()
             return
         print(f"Found entry: {entry}")
@@ -354,16 +354,16 @@ def update_zuordnung(conn):
         cursor.close()
         cursor = conn.cursor()
         try:
-            cursor.execute("UPDATE zuordnung SET stid = %s WHERE oid = %s", (new_student['stid'], entry['oid']))
+            cursor.execute("UPDATE assignments SET stid = %s WHERE oid = %s", (new_student['stid'], entry['oid']))
             conn.commit()
-            print("Zuordnung updated successfully (student changed).")
+            print("assignments updated successfully (student changed).")
         except mysql.connector.Error as err:
-            print("Error updating zuordnung:", err)
+            print("Error updating assignments:", err)
             conn.rollback()
         cursor.close()
     elif sel == 2:
         # Änderung des Chips: Zuerst wählen Sie einen Studenten (mittels generic search) und ändern dann den Chip.
-        print("Select a student for which to update the chip in zuordnung:")
+        print("Select a student for which to update the chip in assignments:")
         students = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
         if not students:
             cursor.close()
@@ -379,10 +379,10 @@ def update_zuordnung(conn):
             cursor.close()
             return
         selected_student = students[ssel-1]
-        cursor.execute("SELECT oid, stid, chid FROM zuordnung WHERE stid = %s", (selected_student['stid'],))
+        cursor.execute("SELECT oid, stid, chid FROM assignments WHERE stid = %s", (selected_student['stid'],))
         entry = cursor.fetchone()
         if not entry:
-            print("No zuordnung entry found for that student.")
+            print("No assignments entry found for that student.")
             cursor.close()
             return
         print(f"Found entry: {entry}")
@@ -391,23 +391,23 @@ def update_zuordnung(conn):
         cursor.close()
         cursor = conn.cursor()
         try:
-            cursor.execute("UPDATE zuordnung SET chid = %s WHERE oid = %s", (new_chid, entry['oid']))
+            cursor.execute("UPDATE assignments SET chid = %s WHERE oid = %s", (new_chid, entry['oid']))
             conn.commit()
-            print("Zuordnung updated successfully (chip changed).")
+            print("assignments updated successfully (chip changed).")
         except mysql.connector.Error as err:
-            print("Error updating zuordnung:", err)
+            print("Error updating assignments:", err)
             conn.rollback()
         cursor.close()
     else:
         print("Invalid selection.")
         cursor.close()
 
-def delete_zuordnung(conn):
-    entries = generic_entry_search(conn, "zuordnung", ["oid", "stid", "chid"])
+def delete_assignments(conn):
+    entries = generic_entry_search(conn, "assignments", ["oid", "stid", "chid"])
     if not entries:
         return
     try:
-        sel = int(input("Select the zuordnung entry to delete (number): "))
+        sel = int(input("Select the assignments entry to delete (number): "))
         if sel < 1 or sel > len(entries):
             print("Invalid selection.")
             return
@@ -415,17 +415,17 @@ def delete_zuordnung(conn):
         print("Invalid input.")
         return
     selected = entries[sel-1]
-    confirm = input(f"Confirm deletion of zuordnung entry with oid {selected['oid']}? (y/n): ")
+    confirm = input(f"Confirm deletion of assignments entry with oid {selected['oid']}? (y/n): ")
     if confirm.lower() != 'y':
         print("Deletion canceled.")
         return
     cursor = conn.cursor()
     try:
-        cursor.execute("DELETE FROM zuordnung WHERE oid = %s", (selected['oid'],))
+        cursor.execute("DELETE FROM assignments WHERE oid = %s", (selected['oid'],))
         conn.commit()
-        print("Zuordnung entry deleted successfully.")
+        print("assignments entry deleted successfully.")
     except mysql.connector.Error as err:
-        print("Error deleting zuordnung:", err)
+        print("Error deleting assignments:", err)
         conn.rollback()
     cursor.close()
 
@@ -433,7 +433,7 @@ def delete_zuordnung(conn):
 # Generic Search for FIND mode
 def generic_search(conn):
     cursor = conn.cursor(dictionary=True)
-    table = input("Enter table name to search (students, chips, rooms, zuordnung): ").strip()
+    table = input("Enter table name to search (students, chips, rooms, assignments): ").strip()
     term = input("Enter search term: ").strip()
     like_term = f"%{term}%"
     # Hier wird einfach in allen Spalten gesucht: Wir nutzen CONCAT aller bekannten Spalten je nach Tabelle.
@@ -443,7 +443,7 @@ def generic_search(conn):
         concat_expr = "CONCAT(chid, ' ', firstname, ' ', secondname, ' ', class)"
     elif table == "rooms":
         concat_expr = "CONCAT(roomid, ' ', name)"
-    elif table == "zuordnung":
+    elif table == "assignments":
         concat_expr = "CONCAT(oid, ' ', stid, ' ', chid)"
     else:
         print("Unknown table.")
@@ -481,10 +481,10 @@ def main():
         print("1: Students")
         print("2: Chips")
         print("3: Rooms")
-        print("4: Zuordnung")
+        print("4: assignments")
         table_sel = input("Enter 1, 2, 3 or 4: ").strip()
         # Map numbers zu Tabellennamen
-        table_map = {"1": "students", "2": "chips", "3": "rooms", "4": "zuordnung"}
+        table_map = {"1": "students", "2": "chips", "3": "rooms", "4": "assignments"}
         if table_sel not in table_map:
             print("Invalid table selection.")
             conn.close()
@@ -517,13 +517,13 @@ def main():
                 delete_room(conn)
             else:
                 print("Invalid operation.")
-        elif table == "zuordnung":
+        elif table == "assignments":
             if op == "1":
-                create_zuordnung(conn)
+                create_assignments(conn)
             elif op == "2":
-                update_zuordnung(conn)
+                update_assignments(conn)
             elif op == "3":
-                delete_zuordnung(conn)
+                delete_assignments(conn)
             else:
                 print("Invalid operation.")
     elif mode == "2":
