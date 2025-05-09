@@ -31,7 +31,7 @@ sudo nano docker-compose.yml
 sudo docker-compose up -d
 ```
 #### Linux:
-Documentary:
+Documentary (Just use docker):
 https://www.digitalocean.com/community/tutorials/how-to-install-mariadb-on-ubuntu-20-04
 
 ### Create and set up the databases
