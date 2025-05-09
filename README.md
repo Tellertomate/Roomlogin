@@ -54,7 +54,7 @@ CREATE TABLE students (stid INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
   secondname VARCHAR(50) NOT NULL);
 ```
 ```
-CREATE TABLE zuordnung (oid INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+CREATE TABLE assignments (oid INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
   stid INT NOT NULL,
   chid VARCHAR(50) NOT NULL,
   FOREIGN KEY (stid) REFERENCES students(stid) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -108,7 +108,7 @@ cd roomregister
 ```
 sudo nano login.py
 ```
-- Open a Tmux session
+- Create a Tmux session
 ```
 sudo tmux
 ```
