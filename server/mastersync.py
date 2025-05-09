@@ -2,20 +2,20 @@
 import mysql.connector
 from mysql.connector import Error
 
-# Configuration of the room register database (source)
-roomregister_config = {
-    'host': '172.19.0.2',
-    'user': 'adminuser',
-    'password': 'YOURPASSWORD',
-    'database': 'roomregister'
-}
-
 # Configuration of the master database (target)
 master_config = {
     'host': '172.18.0.2',
     'user': 'user',
     'password': 'YOURPASSWORD',
     'database': 'master'
+}
+
+# Configuration of the room register database (source)
+roomregister_config = {
+    'host': '172.19.0.2',
+    'user': 'adminuser',
+    'password': 'YOURPASSWORD',
+    'database': 'roomregister'
 }
 
 def connect_database(config):
