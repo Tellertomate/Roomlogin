@@ -2,19 +2,19 @@
 import mysql.connector
 from mysql.connector import Error
 
-# Konfiguration der Roomregister-Datenbank (Quelle)
+# Configuration of the room register database (source)
 roomregister_config = {
-    'host': 'localhost',
-    'user': 'user',
-    'password': 'HimbeerKuchen!',
+    'host': '172.19.0.2',
+    'user': 'adminuser',
+    'password': 'YOURPASSWORD',
     'database': 'roomregister'
 }
 
-# Konfiguration der Master-Datenbank (Ziel)
+# Configuration of the master database (target)
 master_config = {
     'host': '172.18.0.2',
     'user': 'user',
-    'password': 'HimbeerKuchen!',
+    'password': 'YOURPASSWORD',
     'database': 'master'
 }
 
@@ -29,8 +29,8 @@ def connect_database(config):
 
 def fetch_last_transfer_time(master_db):
     """
-    Ermittelt den letzten (maximalen) Zeitstempel aus der Master-Tabelle,
-    in die bereits Login-Einträge übertragen wurden.
+    Determines the last (maximum) timestamp from the master table,
+    into which login entries have already been transferred.
     """
     try:
         cursor = master_db.cursor()
@@ -45,8 +45,8 @@ def fetch_last_transfer_time(master_db):
 
 def fetch_new_logins(room_db, last_time):
     """
-    Liest neue Login-Einträge aus der Roomregister-Login-Tabelle.
-    Annahme: Die Tabelle "login" enthält die Spalten: chid, roomid, time.
+    Reads new login entries from the Roomregister login table.
+    Assumption: The “login” table contains the columns: chid, roomid, time.
     """
     try:
         cursor = room_db.cursor(dictionary=True)
@@ -61,8 +61,8 @@ def fetch_new_logins(room_db, last_time):
 
 def get_oid_for_chid(master_db, chid):
     """
-    Sucht in der Master-Zuordnungstabelle (zuordnung) anhand der CHID nach der zugehörigen OID.
-    Annahme: Die Tabelle "zuordnung" enthält die Spalten: oid und chid.
+    Searches for the corresponding OID in the master assignment table (assignment) using the CHID.
+    Assumption: The “assignment” table contains the columns: oid and chid.
     """
     try:
         cursor = master_db.cursor()
@@ -76,8 +76,8 @@ def get_oid_for_chid(master_db, chid):
 
 def insert_into_master(master_db, oid, roomid, time):
     """
-    Fügt in der Master-Tabelle (master) einen neuen Eintrag ein.
-    Angenommen: Spalten in master sind oid, roomid und time.
+    Inserts a new entry in the master table (master).
+    Assumed: Columns in master are oid, roomid and time.
     """
     try:
         cursor = master_db.cursor()
@@ -96,14 +96,14 @@ def main():
     master_db = connect_database(master_config)
 
     if not room_db or not master_db:
-        print("Datenbankverbindung fehlgeschlagen.")
+        print("Database connection failed.")
         return
 
     last_transfer_time = fetch_last_transfer_time(master_db)
-    print("Letzter Transfer-Zeitstempel:", last_transfer_time)
+    print("Last transfer timestamp:", last_transfer_time)
 
     new_logins = fetch_new_logins(room_db, last_transfer_time)
-    print(f"Neue Login-Einträge gefunden: {len(new_logins)}")
+    print(f"New login entries found: {len(new_logins)}")
 
     inserted_count = 0
 
@@ -113,13 +113,13 @@ def main():
         time = entry['time']
         oid = get_oid_for_chid(master_db, chid)
         if oid:
-            # Eintrag in master.master einfügen
+            # Insert entry in master.master
             if insert_into_master(master_db, oid, roomid, time):
                 inserted_count += 1
         else:
-            print(f"Kein OID-Mapping für CHID {chid} gefunden in zuordnung.")
+            print(f"No OID mapping found for CHID {chid} in mapping.")
 
-    print(f"Insgesamt wurden {inserted_count} neue Einträge in master.master eingefügt.")
+    print(f"A total of {inserted_count} new entries were inserted in master.master.")
 
     room_db.close()
     master_db.close()
