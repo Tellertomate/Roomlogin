@@ -3,13 +3,12 @@ version: '3.8'
 services:
   mariadb:
     image: mariadb:latest
-    container_name: mariadb_container
+    container_name: mariadb
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: jf98hfr392z7guhUHFUZTGJDEiuzfg7ghr83478hIghfnihdfhugguZguGug22837
-      MYSQL_DATABASE: redstack
-      MYSQL_USER: mcadmin
-      MYSQL_PASSWORD: gHG6jfz2h7zGHUh7383hgUZGihiuhoiu
+      MYSQL_ROOT_PASSWORD: STRONG_ROOT_PASSWORD
+      MYSQL_USER: adminuser
+      MYSQL_PASSWORD: STRONG_USER_PASSWORD
     ports:
       - "3306:3306"
     volumes:
