@@ -3,7 +3,7 @@ import mysql.connector
 import sys
 import time
 
-# RFID-Module importieren (falls vorhanden)
+# Import RFID modules (if available)
 try:
     from mfrc522 import SimpleMFRC522
     import RPi.GPIO as GPIO
@@ -13,8 +13,8 @@ except ImportError:
 # Master database configuration
 master_config = {
     'host': '172.18.0.2',
-    'user': 'user',
-    'password': 'HimbeerKuchen!',
+    'user': 'adminuser',
+    'password': 'YOURPASSWORD',
     'database': 'master'
 }
 
@@ -28,13 +28,13 @@ def connect_master():
         sys.exit(1)
 
 def scan_chip():
-    """Scanne einen RFID-Chip und liefere den Wert als String.
-       Falls RFID nicht verfügbar, erfolgt eine manuelle Eingabe."""
+    """Scan an RFID chip and return the value as a string.
+       If RFID is not available, a manual entry is made."""
     if SimpleMFRC522:
         reader = SimpleMFRC522()
         try:
             print("Please place the RFID chip on the reader...")
-            val, _ = reader.read()  # Blockierender Aufruf
+            val, _ = reader.read() # Blocking call
             return str(val)
         finally:
             GPIO.cleanup()
