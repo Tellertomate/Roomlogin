@@ -4,9 +4,9 @@ A solution to "Login" into a room.
 
 
 
-## Installation
+# Installation
 
-### 1. Install the requirements and repository
+## 1. Install the requirements and repository
 #### Updating and installing the requirements:
 ```
 sudo apt update && sudo apt install python3 git nano tmux docker.io docker-compose
@@ -16,13 +16,13 @@ sudo apt update && sudo apt install python3 git nano tmux docker.io docker-compo
 sudo git clone ... && cd ...
 ```
 
-### 2. Create Databases
+## 2. Create Databases
 Lets get your Databases up and running to store all the information.
 We will be using mariadb.
 
-#### Install Mariadb
-##### Docker Compose:
-###### Open it and fill in your passwords etc.
+### Install Mariadb
+#### Docker Compose:
+##### Open it and fill in your passwords etc.
 ```
 sudo nano docker-compose.yml
 ```
