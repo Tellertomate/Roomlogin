@@ -6,28 +6,28 @@ from mfrc522 import SimpleMFRC522
 import mysql.connector
 from mysql.connector import Error
 
-# Flag, um den Lesevorgang zu steuern
+# Flag to control the reading process
 continue_reading = True
 
-# Globale Variable zum Speichern der zuletzt eingeloggten CHID
+# Global variable for saving the last CHID logged in
 last_logged_chid = None
 
 def end_read(signal, frame):
     global continue_reading
-    print("Ctrl+C gedrückt – Lesevorgang wird beendet.")
+    print("Ctrl+C pressed - reading process is terminated.")
     continue_reading = False
     GPIO.cleanup()
 
 signal.signal(signal.SIGINT, end_read)
 
-# Initialisiere den RFID-Leser
+# Initialize the RFID reader
 reader = SimpleMFRC522()
 
-# Datenbankkonfiguration für die Roomregister-Datenbank
+# Database configuration for the Roomregister database
 db_config = {
-    'host': 'localhost',
-    'user': 'user',
-    'password': 'HimbeerKuchen!',
+    'host': '172.19.0.2',
+    'user': 'adminuser',
+    'password': 'YOURPASSWORD',
     'database': 'roomregister'
 }
 
@@ -37,12 +37,12 @@ def connect_to_database():
         if connection.is_connected():
             return connection
     except Error as e:
-        print("Fehler beim Verbinden zur Datenbank:", e)
+        print("Error connecting to the database:", e)
     return None
 
 def is_chip_allowed(chid, cursor):
     """
-    Prüft, ob die gescannte Chip-ID (chid) in der Tabelle 'chips' vorhanden ist.
+    Checks whether the scanned chip ID (chid) is present in the 'chips' table.
     """
     query = "SELECT chid FROM chips WHERE chid = %s"
     cursor.execute(query, (chid,))
@@ -51,13 +51,13 @@ def is_chip_allowed(chid, cursor):
 
 def insert_into_login(chid, roomid, cursor, db):
     """
-    Fügt einen neuen Login-Eintrag in die Tabelle 'login' ein,
-    sofern sich nicht die gleiche CHID direkt hintereinander einloggt.
-    Es werden die Spalten chid, roomid und der aktuelle Zeitstempel (NOW()) gespeichert.
+    Inserts a new login entry in the 'login' table,
+    unless the same CHID logs in directly one after the other.
+    The columns chid, roomid and the current timestamp (NOW()) are saved.
     """
     global last_logged_chid
     if chid == last_logged_chid:
-        print(f"Chip-ID {chid} wurde zuletzt eingeloggt. Kein mehrfaches direktes Einloggen erlaubt.")
+        print(f"Chip ID {chid} was last logged in. Multiple direct logins are not permitted.")
         return
 
     sql = "INSERT INTO login (chid, roomid, time) VALUES (%s, %s, NOW())"
@@ -65,42 +65,42 @@ def insert_into_login(chid, roomid, cursor, db):
     try:
         cursor.execute(sql, values)
         db.commit()
-        last_logged_chid = chid  # Aktualisiere den zuletzt eingeloggten CHID
-        print(f"Eintrag erfolgreich: CHID {chid} - Raum {roomid}")
+        last_logged_chid = chid  # Update the last CHID logged in
+        print(f"Entry successful: CHID {chid} - Raum {roomid}")
     except mysql.connector.Error as err:
-        print("Datenbankfehler:", err)
+        print("Database error:", err)
         db.rollback()
 
-# Beispielhafter Raum (konstant oder über Konfiguration festgelegt)
+# Exemplary room (constant or defined via configuration)
 roomid = 1
 
-print("RFID-Leser aktiv – bitte den RFID-Chip anlegen.")
+print("RFID reader active - please insert the RFID chip.")
 
 db = connect_to_database()
 if db:
     cursor = db.cursor()
     while continue_reading:
         try:
-            # Überprüft, ob eine Karte vorhanden ist (nicht blockierend)
+            # Checks whether a card is present (non-blocking)
             chipid, text = reader.read_no_block()
             if chipid:
-                # Konvertiere ggf. die gelesene Zahl in einen String
+                # Convert the read number into a string if necessary
                 chid = str(chipid)
                 print("Gelesene Chip-ID:", chid)
-                # Überprüfen, ob die CHID in der Chips-Tabelle existiert
+                # Check whether the CHID exists in the chips table
                 if is_chip_allowed(chid, cursor):
                     insert_into_login(chid, roomid, cursor, db)
                 else:
-                    print(f"Chip-ID {chid} ist nicht in der erlaubten Liste vorhanden.")
-                print("Bitte 2 Sekunden warten, bevor die nächste Karte gelesen wird...")
+                    print(f"Chip ID {chid} is not in the allowed list.")
+                print("Please wait 2 seconds before reading the next card...")
                 time.sleep(2)
             else:
-                time.sleep(0.1)  # CPU-Auslastung reduzieren
+                time.sleep(0.1)  # Reduce CPU utilization
         except Exception as e:
-            print("Fehler beim Lesen:", e)
+            print("Reading error:", e)
             GPIO.cleanup()
             break
     cursor.close()
     db.close()
 else:
-    print("Datenbankverbindung konnte nicht hergestellt werden.")
+    print("Database connection could not be established.")
