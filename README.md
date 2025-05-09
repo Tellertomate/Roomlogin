@@ -48,7 +48,7 @@ CREATE TABLE master (lfnr INT AUTO_INCREMENT PRIMARY KEY,
   FOREIGN KEY (oid) REFERENCES zuordnung(oid),
   FOREIGN KEY (roomid) REFERENCES rooms(roomid));
 ```
-
+---
 Roomclient: (MYSQL)
 
 
