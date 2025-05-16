@@ -22,17 +22,18 @@ We will be using mariadb.
 
 ### Install Mariadb
 #### Docker Compose:
-##### Open it and fill in your passwords etc.
+##### Open the file and fill in your passwords etc.
 ```
 sudo nano docker-compose.yml
 ```
-##### Then start it:
+##### Then start the container:
 ```
 sudo docker-compose up -d
 ```
 #### Linux:
-Documentary (Just use docker):
+Documentary:
 https://www.digitalocean.com/community/tutorials/how-to-install-mariadb-on-ubuntu-20-04
+(Just use docker)
 
 ### Create and set up the databases
 #### Master: (MYSQL)
@@ -68,6 +69,7 @@ CREATE TABLE master (lfnr INT AUTO_INCREMENT PRIMARY KEY,
 ```
 
 #### Roomclient: (MYSQL)
+Do the same installation procedure on a different server which is going to be the roomclient
 ```
 CREATE DATABASE roomregister
 USE roomregister;
@@ -81,6 +83,7 @@ FOREIGN KEY (chid) REFERENCES chips(chid));
 ```
 
 ## 3. Editing and automating the scripts
+To sync the necessary data between the databases you will need the provided chipsync and mastersync scripts
 - On your Master server go to /server
 ```
 cd server
@@ -98,7 +101,7 @@ sudo crontab -e
 0 * * * * /usr/bin/python3 /path/to/chipsync.py
 0 * * * * /usr/bin/python3 /path/to/mastersync.py
 ```
-
+#### Starting the client reader
 - On the Roomclient server go to /roomregister
 ```
 cd roomregister
@@ -117,9 +120,11 @@ sudo python3 login.py
 ```
 
 ## 4. Filling in information
+You only edit information in the master db! Now you should fill in the coredata on the masterdb (rooms, students and chips) where you connect students and chips in the assignments table and fill in the roomid's into the corresponding login scripts.
 - To create, change or delete entries in the students, chips, rooms and assignments tables use the entrieinteractiontool.py
 ```
 sudo python3 entrieinteractiontool.py
 ```
+
 
 
