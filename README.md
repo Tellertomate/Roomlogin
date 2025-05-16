@@ -69,7 +69,7 @@ CREATE TABLE master (lfnr INT AUTO_INCREMENT PRIMARY KEY,
 ```
 
 #### Roomclient: (MYSQL)
-Do the same installation procedure on a different server which is going to be the roomclient
+Do the same installation procedure on a different server which is going to be the roomclient and build the roomclient database.
 ```
 CREATE DATABASE roomregister
 USE roomregister;
