@@ -1,6 +1,6 @@
 # Roomlogin via RFID Chips
 Made for the RFID-RC522 simular models maybe will work too.
-A solution to "Login" into a room.
+A solution for a school to "Login" to a classroom as a student via RFID Chips.
 
 
 
