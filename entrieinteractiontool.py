@@ -398,6 +398,69 @@ def generic_search(conn):
     cursor.close()
 
 # ------------------------------
+# Erweiterte Suche in der master-Tabelle
+def search_master(conn):
+    print("\n--- Erweiterte Suche in der master-Tabelle ---")
+    print("Du kannst nach beliebigen Kriterien filtern. Lasse Felder leer, um sie zu ignorieren.")
+    schueler_name = input("Schüler Vor- oder Nachname (optional): ").strip()
+    chip_id = input("Chip-ID (optional): ").strip()
+    room_name = input("Raumname (optional): ").strip()
+    room_id = input("Raum-ID (optional): ").strip()
+    date_exact = input("Genaues Datum (YYYY-MM-DD, optional): ").strip()
+    date_from = input("Von-Datum (YYYY-MM-DD, optional): ").strip()
+    date_to = input("Bis-Datum (YYYY-MM-DD, optional): ").strip()
+
+    # Grund-Query mit Joins
+    query = '''
+        SELECT m.oid, m.roomid, r.name AS roomname, m.datum, s.stid, s.firstname, s.secondname, c.chid
+        FROM master m
+        JOIN assignments a ON m.oid = a.oid
+        JOIN students s ON a.stid = s.stid
+        JOIN chips c ON a.chid = c.chid
+        JOIN rooms r ON m.roomid = r.roomid
+        WHERE 1=1
+    '''
+    params = []
+    if schueler_name:
+        query += " AND (s.firstname LIKE %s OR s.secondname LIKE %s)"
+        like = f"%{schueler_name}%"
+        params.extend([like, like])
+    if chip_id:
+        query += " AND c.chid = %s"
+        params.append(chip_id)
+    if room_name:
+        query += " AND r.name LIKE %s"
+        params.append(f"%{room_name}%")
+    if room_id:
+        query += " AND m.roomid = %s"
+        params.append(room_id)
+    if date_exact:
+        query += " AND DATE(m.datum) = %s"
+        params.append(date_exact)
+    if date_from:
+        query += " AND DATE(m.datum) >= %s"
+        params.append(date_from)
+    if date_to:
+        query += " AND DATE(m.datum) <= %s"
+        params.append(date_to)
+    query += " ORDER BY m.datum DESC"
+
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(query, tuple(params))
+        results = cursor.fetchall()
+    except mysql.connector.Error as err:
+        print("Fehler bei der Suche:", err)
+        results = []
+    if results:
+        print(f"\nGefundene Einträge: {len(results)}")
+        for row in results:
+            print(f"Datum: {row['datum']} | Raum: {row['roomname']} (ID: {row['roomid']}) | Schüler: {row['firstname']} {row['secondname']} (ID: {row['stid']}) | Chip: {row['chid']} | OID: {row['oid']}")
+    else:
+        print("Keine passenden Einträge gefunden.")
+    cursor.close()
+
+# ------------------------------
 # Main Menu (Number input)
 def main():
     conn = connect_master()
@@ -408,8 +471,9 @@ def main():
         print("Select mode:")
         print("1: Change entries")
         print("2: Find entries")
+        print("3: Erweiterte Suche in master")
         print("0: Exit")
-        mode = input("Enter 1, 2 or 0: ").strip()
+        mode = input("Enter 1, 2, 3 or 0: ").strip()
         if mode == "0":
             break
         elif mode == "1":
@@ -467,6 +531,8 @@ def main():
                     print("Invalid operation.")
         elif mode == "2":
             generic_search(conn)
+        elif mode == "3":
+            search_master(conn)
         else:
             print("Invalid mode selected.")
     conn.close()
