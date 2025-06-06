@@ -406,7 +406,7 @@ def search_master(conn):
     date_to = input("To date (YYYY-MM-DD, optional): ").strip()
 
     query = '''
-        SELECT m.oid, m.roomid, r.name AS roomname, m.datum, s.stid, s.firstname, s.secondname, c.chid
+        SELECT m.oid, m.roomid, r.name AS roomname, m.time, s.stid, s.firstname, s.secondname, c.chid
         FROM master m
         JOIN assignments a ON m.oid = a.oid
         JOIN students s ON a.stid = s.stid
@@ -429,15 +429,15 @@ def search_master(conn):
         query += " AND m.roomid = %s"
         params.append(room_id)
     if date_exact:
-        query += " AND DATE(m.datum) = %s"
+        query += " AND DATE(m.time) = %s"
         params.append(date_exact)
     if date_from:
-        query += " AND DATE(m.datum) >= %s"
+        query += " AND DATE(m.time) >= %s"
         params.append(date_from)
     if date_to:
-        query += " AND DATE(m.datum) <= %s"
+        query += " AND DATE(m.time) <= %s"
         params.append(date_to)
-    query += " ORDER BY m.datum DESC"
+    query += " ORDER BY m.time DESC"
 
     cursor = conn.cursor(dictionary=True)
     try:
@@ -449,7 +449,7 @@ def search_master(conn):
     if results:
         print(f"\nEntries found: {len(results)}")
         for row in results:
-            print(f"Date: {row['datum']} | Room: {row['roomname']} (ID: {row['roomid']}) | Student: {row['firstname']} {row['secondname']} (ID: {row['stid']}) | Chip: {row['chid']} | OID: {row['oid']}")
+            print(f"Date: {row['time']} | Room: {row['roomname']} (ID: {row['roomid']}) | Student: {row['firstname']} {row['secondname']} (ID: {row['stid']}) | Chip: {row['chid']} | OID: {row['oid']}")
     else:
         print("No matching entries found.")
     cursor.close()
