@@ -31,14 +31,10 @@ Then start the container:
 sudo docker-compose up -d
 ```
 
----
-
 #### Linux:
 Documentary:
 https://www.digitalocean.com/community/tutorials/how-to-install-mariadb-on-ubuntu-20-04
 (Just use docker)
-
----
 
 ### Create and set up the databases
 #### Master: (MYSQL)
