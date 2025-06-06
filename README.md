@@ -36,6 +36,8 @@ Documentary:
 https://www.digitalocean.com/community/tutorials/how-to-install-mariadb-on-ubuntu-20-04
 (Just use docker)
 
+---
+
 ### Create and set up the databases
 #### Master: (MYSQL)
 Fill in the host ip, username, passwort etc. in the mastersetup.py file and then execute it.
