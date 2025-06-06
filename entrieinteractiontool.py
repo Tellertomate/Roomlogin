@@ -41,6 +41,29 @@ def scan_chip():
     else:
         return input("RFID module not available. Enter chid manually: ")
 
+def get_valid_int(prompt, min_val=None, max_val=None):
+    """Fragt den Nutzer nach einer Ganzzahl und prüft die Eingabe."""
+    while True:
+        try:
+            val = int(input(prompt))
+            if (min_val is not None and val < min_val) or (max_val is not None and val > max_val):
+                print(f"Bitte eine Zahl zwischen {min_val} und {max_val} eingeben.")
+                continue
+            return val
+        except ValueError:
+            print("Ungültige Eingabe. Bitte eine Zahl eingeben.")
+
+def confirm_action(prompt):
+    """Fragt den Nutzer nach einer Bestätigung (y/n)."""
+    while True:
+        val = input(f"{prompt} (y/n): ").strip().lower()
+        if val == 'y':
+            return True
+        elif val == 'n':
+            return False
+        else:
+            print("Bitte 'y' oder 'n' eingeben.")
+
 # ------------------------------
 # General search function for UPDATE/DELETE (searches in all relevant columns)
 def generic_entry_search(conn, table, columns):
@@ -51,12 +74,19 @@ def generic_entry_search(conn, table, columns):
     """
     cursor = conn.cursor(dictionary=True)
     search_term = input("Enter search term (will be compared against all relevant fields): ").strip()
+    if not search_term:
+        print("Suchbegriff darf nicht leer sein.")
+        return []
     like_term = f"%{search_term}%"
     # CONCAT of the columns with spaces in between
     concat_expr = "CONCAT(" + ", ' ', ".join(columns) + ")"
     query = f"SELECT * FROM {table} WHERE {concat_expr} LIKE %s"
-    cursor.execute(query, (like_term,))
-    results = cursor.fetchall()
+    try:
+        cursor.execute(query, (like_term,))
+        results = cursor.fetchall()
+    except mysql.connector.Error as err:
+        print("Fehler bei der Suche:", err)
+        results = []
     if results:
         print("Entries found:")
         for idx, row in enumerate(results):
@@ -85,14 +115,7 @@ def update_student(conn):
     entries = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
     if not entries:
         return
-    try:
-        sel = int(input("Select the entry to update (number): "))
-        if sel < 1 or sel > len(entries):
-            print("Invalid selection.")
-            return
-    except ValueError:
-        print("Invalid input.")
-        return
+    sel = get_valid_int("Select the entry to update (number): ", 1, len(entries))
     selected = entries[sel-1]
     new_first = input(f"New first name (leave blank to keep '{selected['firstname']}'): ") or selected['firstname']
     new_second = input(f"New last name (leave blank to keep '{selected['secondname']}'): ") or selected['secondname']
@@ -111,17 +134,9 @@ def delete_student(conn):
     entries = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
     if not entries:
         return
-    try:
-        sel = int(input("Select the entry to delete (number): "))
-        if sel < 1 or sel > len(entries):
-            print("Invalid selection.")
-            return
-    except ValueError:
-        print("Invalid input.")
-        return
+    sel = get_valid_int("Select the entry to delete (number): ", 1, len(entries))
     selected = entries[sel-1]
-    confirm = input(f"Confirm deletion of student {selected['firstname']} {selected['secondname']} (ID: {selected['stid']})? (y/n): ")
-    if confirm.lower() != "y":
+    if not confirm_action(f"Confirm deletion of student {selected['firstname']} {selected['secondname']} (ID: {selected['stid']})?"):
         print("Deletion canceled.")
         return
     cursor = conn.cursor()
@@ -153,70 +168,52 @@ def create_chip(conn):
     cursor.close()
 
 def update_chip(conn):
-    # Scan chip to update
     print("Scan the chip you want to update:")
     chid = scan_chip()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT chid, firstname, secondname, class FROM chips WHERE chid = %s", (chid,))
-    entry = cursor.fetchone()
-    if not entry:
-        print("No chip with that CHID found.")
-        cursor.close()
-        return
-    print(f"Found chip: {entry}")
-    print("What do you want to update?")
-    print("1: First name")
-    print("2: Last name")
-    print("3: Class")
-    try:
-        sel = int(input("Select option (1/2/3): "))
-    except ValueError:
-        print("Invalid input.")
-        cursor.close()
-        return
-    field_map = {1: "firstname", 2: "secondname", 3: "class"}
-    if sel not in field_map:
-        print("Invalid selection.")
-        cursor.close()
-        return
-    new_value = input(f"Enter new value for {field_map[sel]}: ")
-    cursor.close()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(f"UPDATE chips SET {field_map[sel]} = %s WHERE chid = %s", (new_value, chid))
-        conn.commit()
-        print("Chip updated successfully.")
-    except mysql.connector.Error as err:
-        print("Error updating chip:", err)
-        conn.rollback()
-    cursor.close()
+    with conn.cursor(dictionary=True) as cursor:
+        cursor.execute("SELECT chid, firstname, secondname, class FROM chips WHERE chid = %s", (chid,))
+        entry = cursor.fetchone()
+        if not entry:
+            print("No chip with that CHID found.")
+            return
+        print(f"Found chip: {entry}")
+        print("What do you want to update?")
+        print("1: First name")
+        print("2: Last name")
+        print("3: Class")
+        sel = get_valid_int("Select option (1/2/3): ", 1, 3)
+        field_map = {1: "firstname", 2: "secondname", 3: "class"}
+        new_value = input(f"Enter new value for {field_map[sel]}: ")
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(f"UPDATE chips SET {field_map[sel]} = %s WHERE chid = %s", (new_value, chid))
+            conn.commit()
+            print("Chip updated successfully.")
+        except mysql.connector.Error as err:
+            print("Error updating chip:", err)
+            conn.rollback()
 
 def delete_chip(conn):
     print("Scan the chip you want to delete:")
     chid = scan_chip()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT chid, firstname, secondname, class FROM chips WHERE chid = %s", (chid,))
-    entry = cursor.fetchone()
-    if not entry:
-        print("No chip with that CHID found.")
-        cursor.close()
-        return
-    print(f"Found chip: {entry}")
-    confirm = input(f"Confirm deletion of chip {chid}? (y/n): ")
-    if confirm.lower() != "y":
-        print("Deletion canceled.")
-        cursor.close()
-        return
-    cursor.close()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("DELETE FROM chips WHERE chid = %s", (chid,))
-        conn.commit()
-        print("Chip deleted successfully.")
-    except mysql.connector.Error as err:
-        print("Error deleting chip:", err)
-        conn.rollback()
-    cursor.close()
+    with conn.cursor(dictionary=True) as cursor:
+        cursor.execute("SELECT chid, firstname, secondname, class FROM chips WHERE chid = %s", (chid,))
+        entry = cursor.fetchone()
+        if not entry:
+            print("No chip with that CHID found.")
+            return
+        print(f"Found chip: {entry}")
+        if not confirm_action(f"Confirm deletion of chip {chid}?"):
+            print("Deletion canceled.")
+            return
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute("DELETE FROM chips WHERE chid = %s", (chid,))
+            conn.commit()
+            print("Chip deleted successfully.")
+        except mysql.connector.Error as err:
+            print("Error deleting chip:", err)
+            conn.rollback()
 
 # ------------------------------
 # CRUD for rooms
@@ -236,14 +233,7 @@ def update_room(conn):
     entries = generic_entry_search(conn, "rooms", ["roomid", "name"])
     if not entries:
         return
-    try:
-        sel = int(input("Select the room to update (number): "))
-        if sel < 1 or sel > len(entries):
-            print("Invalid selection.")
-            return
-    except ValueError:
-        print("Invalid input.")
-        return
+    sel = get_valid_int("Select the room to update (number): ", 1, len(entries))
     selected = entries[sel-1]
     new_name = input(f"Enter new room name (leave blank to keep '{selected['name']}'): ") or selected['name']
     cursor = conn.cursor()
@@ -260,17 +250,9 @@ def delete_room(conn):
     entries = generic_entry_search(conn, "rooms", ["roomid", "name"])
     if not entries:
         return
-    try:
-        sel = int(input("Select the room to delete (number): "))
-        if sel < 1 or sel > len(entries):
-            print("Invalid selection.")
-            return
-    except ValueError:
-        print("Invalid input.")
-        return
+    sel = get_valid_int("Select the room to delete (number): ", 1, len(entries))
     selected = entries[sel-1]
-    confirm = input(f"Confirm deletion of room '{selected['name']}' (ID: {selected['roomid']})? (y/n): ")
-    if confirm.lower() != "y":
+    if not confirm_action(f"Confirm deletion of room '{selected['name']}' (ID: {selected['roomid']})?"):
         print("Deletion canceled.")
         return
     cursor = conn.cursor()
@@ -291,14 +273,7 @@ def create_assignments(conn):
     students = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
     if not students:
         return
-    try:
-        sel = int(input("Select a student (number): "))
-        if sel < 1 or sel > len(students):
-            print("Invalid selection.")
-            return
-    except ValueError:
-        print("Invalid input.")
-        return
+    sel = get_valid_int("Select a student (number): ", 1, len(students))
     selected_student = students[sel-1]
     # Scan the new Chip (chid)
     print("Scan the new chip for the assignments entry:")
@@ -318,105 +293,62 @@ def update_assignments(conn):
     print("What do you want to update in assignments?")
     print("1: Change student (name)")
     print("2: Change chip")
-    try:
-        sel = int(input("Select option (1/2): "))
-    except ValueError:
-        print("Invalid input.")
-        return
-    cursor = conn.cursor(dictionary=True)
-    if sel == 1:
-        # Change the student: First scan the associated chip to identify the entry.
-        print("Scan the chip (chid) to identify the assignments entry:")
-        target_chid = scan_chip()
-        cursor.execute("SELECT oid, stid, chid FROM assignments WHERE chid = %s", (target_chid,))
-        entry = cursor.fetchone()
-        if not entry:
-            print("No assignments entry found with that chid.")
-            cursor.close()
-            return
-        print(f"Found entry: {entry}")
-        print("Select new student for this entry:")
-        students = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
-        if not students:
-            cursor.close()
-            return
-        try:
-            ssel = int(input("Select a student (number): "))
-            if ssel < 1 or ssel > len(students):
-                print("Invalid selection.")
-                cursor.close()
+    sel = get_valid_int("Select option (1/2): ", 1, 2)
+    with conn.cursor(dictionary=True) as cursor:
+        if sel == 1:
+            print("Scan the chip (chid) to identify the assignments entry:")
+            target_chid = scan_chip()
+            cursor.execute("SELECT oid, stid, chid FROM assignments WHERE chid = %s", (target_chid,))
+            entry = cursor.fetchone()
+            if not entry:
+                print("No assignments entry found with that chid.")
                 return
-        except ValueError:
-            print("Invalid input.")
-            cursor.close()
-            return
-        new_student = students[ssel-1]
-        cursor.close()
-        cursor = conn.cursor()
-        try:
-            cursor.execute("UPDATE assignments SET stid = %s WHERE oid = %s", (new_student['stid'], entry['oid']))
-            conn.commit()
-            print("assignments updated successfully (student changed).")
-        except mysql.connector.Error as err:
-            print("Error updating assignments:", err)
-            conn.rollback()
-        cursor.close()
-    elif sel == 2:
-        # Changing the chip: First select a student (using generic search) and then change the chip.
-        print("Select a student for which to update the chip in assignments:")
-        students = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
-        if not students:
-            cursor.close()
-            return
-        try:
-            ssel = int(input("Select a student (number): "))
-            if ssel < 1 or ssel > len(students):
-                print("Invalid selection.")
-                cursor.close()
+            print(f"Found entry: {entry}")
+            print("Select new student for this entry:")
+            students = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
+            if not students:
                 return
-        except ValueError:
-            print("Invalid input.")
-            cursor.close()
-            return
-        selected_student = students[ssel-1]
-        cursor.execute("SELECT oid, stid, chid FROM assignments WHERE stid = %s", (selected_student['stid'],))
-        entry = cursor.fetchone()
-        if not entry:
-            print("No assignments entry found for that student.")
-            cursor.close()
-            return
-        print(f"Found entry: {entry}")
-        print("Please scan the new chip:")
-        new_chid = scan_chip()
-        cursor.close()
-        cursor = conn.cursor()
-        try:
-            cursor.execute("UPDATE assignments SET chid = %s WHERE oid = %s", (new_chid, entry['oid']))
-            conn.commit()
-            print("assignments updated successfully (chip changed).")
-        except mysql.connector.Error as err:
-            print("Error updating assignments:", err)
-            conn.rollback()
-        cursor.close()
-    else:
-        print("Invalid selection.")
-        cursor.close()
+            ssel = get_valid_int("Select a student (number): ", 1, len(students))
+            new_student = students[ssel-1]
+            with conn.cursor() as cur2:
+                try:
+                    cur2.execute("UPDATE assignments SET stid = %s WHERE oid = %s", (new_student['stid'], entry['oid']))
+                    conn.commit()
+                    print("assignments updated successfully (student changed).")
+                except mysql.connector.Error as err:
+                    print("Error updating assignments:", err)
+                    conn.rollback()
+        elif sel == 2:
+            print("Select a student for which to update the chip in assignments:")
+            students = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
+            if not students:
+                return
+            ssel = get_valid_int("Select a student (number): ", 1, len(students))
+            selected_student = students[ssel-1]
+            cursor.execute("SELECT oid, stid, chid FROM assignments WHERE stid = %s", (selected_student['stid'],))
+            entry = cursor.fetchone()
+            if not entry:
+                print("No assignments entry found for that student.")
+                return
+            print(f"Found entry: {entry}")
+            print("Please scan the new chip:")
+            new_chid = scan_chip()
+            with conn.cursor() as cur2:
+                try:
+                    cur2.execute("UPDATE assignments SET chid = %s WHERE oid = %s", (new_chid, entry['oid']))
+                    conn.commit()
+                    print("assignments updated successfully (chip changed).")
+                except mysql.connector.Error as err:
+                    print("Error updating assignments:", err)
+                    conn.rollback()
 
 def delete_assignments(conn):
     entries = generic_entry_search(conn, "assignments", ["oid", "stid", "chid"])
     if not entries:
         return
-    try:
-        sel = int(input("Select the assignments entry to delete (number): "))
-        if sel < 1 or sel > len(entries):
-            print("Invalid selection.")
-            return
-    except ValueError:
-        print("Invalid input.")
-        return
+    sel = get_valid_int("Select the assignments entry to delete (number): ", 1, len(entries))
     selected = entries[sel-1]
-    confirm = input(f"Confirm deletion of assignments entry with oid {selected['oid']}? (y/n): ")
-    if confirm.lower() != 'y':
+    if not confirm_action(f"Confirm deletion of assignments entry with oid {selected['oid']}?"):
         print("Deletion canceled.")
         return
     cursor = conn.cursor()
@@ -434,7 +366,15 @@ def delete_assignments(conn):
 def generic_search(conn):
     cursor = conn.cursor(dictionary=True)
     table = input("Enter table name to search (students, chips, rooms, assignments): ").strip()
+    if table not in ("students", "chips", "rooms", "assignments"):
+        print("Unknown table.")
+        cursor.close()
+        return
     term = input("Enter search term: ").strip()
+    if not term:
+        print("Suchbegriff darf nicht leer sein.")
+        cursor.close()
+        return
     like_term = f"%{term}%"
     # Here we simply search in all columns: We use CONCAT of all known columns depending on the table.
     if table == "students":
@@ -445,13 +385,13 @@ def generic_search(conn):
         concat_expr = "CONCAT(roomid, ' ', name)"
     elif table == "assignments":
         concat_expr = "CONCAT(oid, ' ', stid, ' ', chid)"
-    else:
-        print("Unknown table.")
-        cursor.close()
-        return
     query = f"SELECT * FROM {table} WHERE {concat_expr} LIKE %s"
-    cursor.execute(query, (like_term,))
-    results = cursor.fetchall()
+    try:
+        cursor.execute(query, (like_term,))
+        results = cursor.fetchall()
+    except mysql.connector.Error as err:
+        print("Fehler bei der Suche:", err)
+        results = []
     if results:
         print("\nResults:")
         for row in results:
@@ -466,70 +406,72 @@ def main():
     conn = connect_master()
     if not conn:
         sys.exit(1)
-    print("=== Master Database Management ===")
-    print("Select mode:")
-    print("1: Change entries")
-    print("2: Find entries")
-    mode = input("Enter 1 or 2: ").strip()
-    if mode == "1":
-        print("\nSelect operation:")
-        print("1: Create")
-        print("2: Change")
-        print("3: Delete")
-        op = input("Enter 1, 2 or 3: ").strip()
-        print("Select table:")
-        print("1: Students")
-        print("2: Chips")
-        print("3: Rooms")
-        print("4: assignments")
-        table_sel = input("Enter 1, 2, 3 or 4: ").strip()
-        # Map numbers zu Tabellennamen
-        table_map = {"1": "students", "2": "chips", "3": "rooms", "4": "assignments"}
-        if table_sel not in table_map:
-            print("Invalid table selection.")
-            conn.close()
-            return
-        table = table_map[table_sel]
-        if table == "students":
-            if op == "1":
-                create_student(conn)
-            elif op == "2":
-                update_student(conn)
-            elif op == "3":
-                delete_student(conn)
-            else:
-                print("Invalid operation.")
-        elif table == "chips":
-            if op == "1":
-                create_chip(conn)
-            elif op == "2":
-                update_chip(conn)
-            elif op == "3":
-                delete_chip(conn)
-            else:
-                print("Invalid operation.")
-        elif table == "rooms":
-            if op == "1":
-                create_room(conn)
-            elif op == "2":
-                update_room(conn)
-            elif op == "3":
-                delete_room(conn)
-            else:
-                print("Invalid operation.")
-        elif table == "assignments":
-            if op == "1":
-                create_assignments(conn)
-            elif op == "2":
-                update_assignments(conn)
-            elif op == "3":
-                delete_assignments(conn)
-            else:
-                print("Invalid operation.")
-    elif mode == "2":
-        generic_search(conn)
-    else:
-        print("Invalid mode selected.")
+    while True:
+        print("=== Master Database Management ===")
+        print("Select mode:")
+        print("1: Change entries")
+        print("2: Find entries")
+        print("0: Exit")
+        mode = input("Enter 1, 2 or 0: ").strip()
+        if mode == "0":
+            break
+        elif mode == "1":
+            print("\nSelect operation:")
+            print("1: Create")
+            print("2: Change")
+            print("3: Delete")
+            op = input("Enter 1, 2 or 3: ").strip()
+            print("Select table:")
+            print("1: Students")
+            print("2: Chips")
+            print("3: Rooms")
+            print("4: assignments")
+            table_sel = input("Enter 1, 2, 3 or 4: ").strip()
+            table_map = {"1": "students", "2": "chips", "3": "rooms", "4": "assignments"}
+            if table_sel not in table_map:
+                print("Invalid table selection.")
+                continue
+            table = table_map[table_sel]
+            if table == "students":
+                if op == "1":
+                    create_student(conn)
+                elif op == "2":
+                    update_student(conn)
+                elif op == "3":
+                    delete_student(conn)
+                else:
+                    print("Invalid operation.")
+            elif table == "chips":
+                if op == "1":
+                    create_chip(conn)
+                elif op == "2":
+                    update_chip(conn)
+                elif op == "3":
+                    delete_chip(conn)
+                else:
+                    print("Invalid operation.")
+            elif table == "rooms":
+                if op == "1":
+                    create_room(conn)
+                elif op == "2":
+                    update_room(conn)
+                elif op == "3":
+                    delete_room(conn)
+                else:
+                    print("Invalid operation.")
+            elif table == "assignments":
+                if op == "1":
+                    create_assignments(conn)
+                elif op == "2":
+                    update_assignments(conn)
+                elif op == "3":
+                    delete_assignments(conn)
+                else:
+                    print("Invalid operation.")
+        elif mode == "2":
+            generic_search(conn)
+        else:
+            print("Invalid mode selected.")
     conn.close()
 
 if __name__ == "__main__":
