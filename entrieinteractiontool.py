@@ -153,13 +153,10 @@ def delete_student(conn):
 # CRUD for chips
 def create_chip(conn):
     chid = scan_chip()
-    first = input("Enter first name for chip owner: ")
-    second = input("Enter last name for chip owner: ")
-    class_value = input("Enter class: ")
+    # Nur Chip scannen, keine weiteren Eingaben
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO chips (chid, firstname, secondname, class) VALUES (%s, %s, %s, %s)",
-                       (chid, first, second, class_value))
+        cursor.execute("INSERT INTO chips (chid) VALUES (%s)", (chid,))
         conn.commit()
         print(f"Chip created successfully. CHID: {chid}")
     except mysql.connector.Error as err:
