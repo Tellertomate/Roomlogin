@@ -54,7 +54,7 @@ def get_valid_int(prompt, min_val=None, max_val=None):
             print("Ungültige Eingabe. Bitte eine Zahl eingeben.")
 
 def confirm_action(prompt):
-    """Fragt den Nutzer nach einer Bestätigung (y/n)."""
+    """Ask the user for confirmation (y/n)."""
     while True:
         val = input(f"{prompt} (y/n): ").strip().lower()
         if val == 'y':
@@ -62,7 +62,7 @@ def confirm_action(prompt):
         elif val == 'n':
             return False
         else:
-            print("Bitte 'y' oder 'n' eingeben.")
+            print("Please enter 'y' or 'n'.")
 
 # ------------------------------
 # General search function for UPDATE/DELETE (searches in all relevant columns)
@@ -70,22 +70,21 @@ def generic_entry_search(conn, table, columns):
     """
     Searches in the specified table in all specified columns using CONCAT.
     table: Table name (e.g. students)
-    columns: Liste der Spalten, z.B. ["stid", "firstname", "secondname"]
+    columns: List of columns, e.g. ["stid", "firstname", "secondname"]
     """
     cursor = conn.cursor(dictionary=True)
     search_term = input("Enter search term (will be compared against all relevant fields): ").strip()
     if not search_term:
-        print("Suchbegriff darf nicht leer sein.")
+        print("Search term cannot be empty.")
         return []
     like_term = f"%{search_term}%"
-    # CONCAT of the columns with spaces in between
     concat_expr = "CONCAT(" + ", ' ', ".join(columns) + ")"
     query = f"SELECT * FROM {table} WHERE {concat_expr} LIKE %s"
     try:
         cursor.execute(query, (like_term,))
         results = cursor.fetchall()
     except mysql.connector.Error as err:
-        print("Fehler bei der Suche:", err)
+        print("Error during search:", err)
         results = []
     if results:
         print("Entries found:")
@@ -153,7 +152,6 @@ def delete_student(conn):
 # CRUD for chips
 def create_chip(conn):
     chid = scan_chip()
-    # Nur Chip scannen, keine weiteren Eingaben
     cursor = conn.cursor()
     try:
         cursor.execute("INSERT INTO chips (chid) VALUES (%s)", (chid,))
@@ -265,14 +263,12 @@ def delete_room(conn):
 # ------------------------------
 # CRUD for assignments
 def create_assignments(conn):
-    # Auswahl des Studenten über generic search (sucht in students)
     print("Select a student for the new assignments:")
     students = generic_entry_search(conn, "students", ["stid", "firstname", "secondname"])
     if not students:
         return
     sel = get_valid_int("Select a student (number): ", 1, len(students))
     selected_student = students[sel-1]
-    # Scan the new Chip (chid)
     print("Scan the new chip for the assignments entry:")
     new_chid = scan_chip()
     cursor = conn.cursor()
@@ -280,7 +276,7 @@ def create_assignments(conn):
         cursor.execute("INSERT INTO assignments (stid, chid) VALUES (%s, %s)",
                        (selected_student['stid'], new_chid))
         conn.commit()
-        print(f"assignments created successfully with student ID {selected_student['stid']} and chid {new_chid}.")
+        print(f"Assignments created successfully with student ID {selected_student['stid']} and chip ID {new_chid}.")
     except mysql.connector.Error as err:
         print("Error creating assignments:", err)
         conn.rollback()
@@ -293,12 +289,12 @@ def update_assignments(conn):
     sel = get_valid_int("Select option (1/2): ", 1, 2)
     with conn.cursor(dictionary=True) as cursor:
         if sel == 1:
-            print("Scan the chip (chid) to identify the assignments entry:")
+            print("Scan the chip (chip ID) to identify the assignments entry:")
             target_chid = scan_chip()
             cursor.execute("SELECT oid, stid, chid FROM assignments WHERE chid = %s", (target_chid,))
             entry = cursor.fetchone()
             if not entry:
-                print("No assignments entry found with that chid.")
+                print("No assignments entry found with that chip ID.")
                 return
             print(f"Found entry: {entry}")
             print("Select new student for this entry:")
@@ -311,7 +307,7 @@ def update_assignments(conn):
                 try:
                     cur2.execute("UPDATE assignments SET stid = %s WHERE oid = %s", (new_student['stid'], entry['oid']))
                     conn.commit()
-                    print("assignments updated successfully (student changed).")
+                    print("Assignments updated successfully (student changed).")
                 except mysql.connector.Error as err:
                     print("Error updating assignments:", err)
                     conn.rollback()
@@ -334,7 +330,7 @@ def update_assignments(conn):
                 try:
                     cur2.execute("UPDATE assignments SET chid = %s WHERE oid = %s", (new_chid, entry['oid']))
                     conn.commit()
-                    print("assignments updated successfully (chip changed).")
+                    print("Assignments updated successfully (chip changed).")
                 except mysql.connector.Error as err:
                     print("Error updating assignments:", err)
                     conn.rollback()
@@ -352,7 +348,7 @@ def delete_assignments(conn):
     try:
         cursor.execute("DELETE FROM assignments WHERE oid = %s", (selected['oid'],))
         conn.commit()
-        print("assignments entry deleted successfully.")
+        print("Assignments entry deleted successfully.")
     except mysql.connector.Error as err:
         print("Error deleting assignments:", err)
         conn.rollback()
@@ -369,11 +365,10 @@ def generic_search(conn):
         return
     term = input("Enter search term: ").strip()
     if not term:
-        print("Suchbegriff darf nicht leer sein.")
+        print("Search term cannot be empty.")
         cursor.close()
         return
     like_term = f"%{term}%"
-    # Here we simply search in all columns: We use CONCAT of all known columns depending on the table.
     if table == "students":
         concat_expr = "CONCAT(stid, ' ', firstname, ' ', secondname)"
     elif table == "chips":
@@ -387,7 +382,7 @@ def generic_search(conn):
         cursor.execute(query, (like_term,))
         results = cursor.fetchall()
     except mysql.connector.Error as err:
-        print("Fehler bei der Suche:", err)
+        print("Error during search:", err)
         results = []
     if results:
         print("\nResults:")
@@ -400,17 +395,16 @@ def generic_search(conn):
 # ------------------------------
 # Erweiterte Suche in der master-Tabelle
 def search_master(conn):
-    print("\n--- Erweiterte Suche in der master-Tabelle ---")
-    print("Du kannst nach beliebigen Kriterien filtern. Lasse Felder leer, um sie zu ignorieren.")
-    schueler_name = input("Schüler Vor- oder Nachname (optional): ").strip()
-    chip_id = input("Chip-ID (optional): ").strip()
-    room_name = input("Raumname (optional): ").strip()
-    room_id = input("Raum-ID (optional): ").strip()
-    date_exact = input("Genaues Datum (YYYY-MM-DD, optional): ").strip()
-    date_from = input("Von-Datum (YYYY-MM-DD, optional): ").strip()
-    date_to = input("Bis-Datum (YYYY-MM-DD, optional): ").strip()
+    print("\n--- Advanced search in the master table ---")
+    print("You can filter by any criteria. Leave fields empty to ignore them.")
+    schueler_name = input("Student first or last name (optional): ").strip()
+    chip_id = input("Chip ID (optional): ").strip()
+    room_name = input("Room name (optional): ").strip()
+    room_id = input("Room ID (optional): ").strip()
+    date_exact = input("Exact date (YYYY-MM-DD, optional): ").strip()
+    date_from = input("From date (YYYY-MM-DD, optional): ").strip()
+    date_to = input("To date (YYYY-MM-DD, optional): ").strip()
 
-    # Grund-Query mit Joins
     query = '''
         SELECT m.oid, m.roomid, r.name AS roomname, m.datum, s.stid, s.firstname, s.secondname, c.chid
         FROM master m
@@ -450,14 +444,14 @@ def search_master(conn):
         cursor.execute(query, tuple(params))
         results = cursor.fetchall()
     except mysql.connector.Error as err:
-        print("Fehler bei der Suche:", err)
+        print("Error during search:", err)
         results = []
     if results:
-        print(f"\nGefundene Einträge: {len(results)}")
+        print(f"\nEntries found: {len(results)}")
         for row in results:
-            print(f"Datum: {row['datum']} | Raum: {row['roomname']} (ID: {row['roomid']}) | Schüler: {row['firstname']} {row['secondname']} (ID: {row['stid']}) | Chip: {row['chid']} | OID: {row['oid']}")
+            print(f"Date: {row['datum']} | Room: {row['roomname']} (ID: {row['roomid']}) | Student: {row['firstname']} {row['secondname']} (ID: {row['stid']}) | Chip: {row['chid']} | OID: {row['oid']}")
     else:
-        print("Keine passenden Einträge gefunden.")
+        print("No matching entries found.")
     cursor.close()
 
 # ------------------------------
@@ -471,7 +465,7 @@ def main():
         print("Select mode:")
         print("1: Change entries")
         print("2: Find entries")
-        print("3: Erweiterte Suche in master")
+        print("3: Advanced search in master")
         print("0: Exit")
         mode = input("Enter 1, 2, 3 or 0: ").strip()
         if mode == "0":
@@ -486,7 +480,7 @@ def main():
             print("1: Students")
             print("2: Chips")
             print("3: Rooms")
-            print("4: assignments")
+            print("4: Assignments")
             table_sel = input("Enter 1, 2, 3 or 4: ").strip()
             table_map = {"1": "students", "2": "chips", "3": "rooms", "4": "assignments"}
             if table_sel not in table_map:
