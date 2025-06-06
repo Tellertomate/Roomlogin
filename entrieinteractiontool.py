@@ -357,35 +357,90 @@ def delete_assignments(conn):
 # ------------------------------
 # Generic Search for FIND mode
 def generic_search(conn):
-    cursor = conn.cursor(dictionary=True)
-    table = input("Enter table name to search (students, chips, rooms, assignments): ").strip()
-    if table not in ("students", "chips", "rooms", "assignments"):
-        print("Unknown table.")
-        cursor.close()
+    print("\nSelect table to search:")
+    print("1: Students")
+    print("2: Chips")
+    print("3: Rooms")
+    print("4: Assignments")
+    table_map = {"1": "students", "2": "chips", "3": "rooms", "4": "assignments"}
+    table_sel = input("Enter 1, 2, 3 or 4: ").strip()
+    if table_sel not in table_map:
+        print("Invalid table selection.")
         return
-    term = input("Enter search term: ").strip()
-    if not term:
-        print("Search term cannot be empty.")
-        cursor.close()
-        return
-    like_term = f"%{term}%"
+    table = table_map[table_sel]
+
+    # Prompt for filters depending on table
+    filters = []
+    params = []
     if table == "students":
-        concat_expr = "CONCAT(stid, ' ', firstname, ' ', secondname)"
+        stid = input("Student ID (optional): ").strip()
+        firstname = input("First name (optional): ").strip()
+        secondname = input("Last name (optional): ").strip()
+        if stid:
+            filters.append("stid = %s")
+            params.append(stid)
+        if firstname:
+            filters.append("firstname LIKE %s")
+            params.append(f"%{firstname}%")
+        if secondname:
+            filters.append("secondname LIKE %s")
+            params.append(f"%{secondname}%")
+        query = "SELECT * FROM students"
     elif table == "chips":
-        concat_expr = "CONCAT(chid, ' ', firstname, ' ', secondname, ' ', class)"
+        chid = input("Chip ID (optional): ").strip()
+        firstname = input("First name (optional): ").strip()
+        secondname = input("Last name (optional): ").strip()
+        chip_class = input("Class (optional): ").strip()
+        if chid:
+            filters.append("chid = %s")
+            params.append(chid)
+        if firstname:
+            filters.append("firstname LIKE %s")
+            params.append(f"%{firstname}%")
+        if secondname:
+            filters.append("secondname LIKE %s")
+            params.append(f"%{secondname}%")
+        if chip_class:
+            filters.append("class LIKE %s")
+            params.append(f"%{chip_class}%")
+        query = "SELECT * FROM chips"
     elif table == "rooms":
-        concat_expr = "CONCAT(roomid, ' ', name)"
+        roomid = input("Room ID (optional): ").strip()
+        name = input("Room name (optional): ").strip()
+        if roomid:
+            filters.append("roomid = %s")
+            params.append(roomid)
+        if name:
+            filters.append("name LIKE %s")
+            params.append(f"%{name}%")
+        query = "SELECT * FROM rooms"
     elif table == "assignments":
-        concat_expr = "CONCAT(oid, ' ', stid, ' ', chid)"
-    query = f"SELECT * FROM {table} WHERE {concat_expr} LIKE %s"
+        oid = input("Assignment OID (optional): ").strip()
+        stid = input("Student ID (optional): ").strip()
+        chid = input("Chip ID (optional): ").strip()
+        if oid:
+            filters.append("oid = %s")
+            params.append(oid)
+        if stid:
+            filters.append("stid = %s")
+            params.append(stid)
+        if chid:
+            filters.append("chid = %s")
+            params.append(chid)
+        query = "SELECT * FROM assignments"
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+    query += ";"
+
+    cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute(query, (like_term,))
+        cursor.execute(query, tuple(params))
         results = cursor.fetchall()
     except mysql.connector.Error as err:
         print("Error during search:", err)
         results = []
     if results:
-        print("\nResults:")
+        print(f"\nResults found: {len(results)}")
         for row in results:
             print(row)
     else:
@@ -464,7 +519,7 @@ def main():
         print("=== Master Database Management ===")
         print("Select mode:")
         print("1: Change entries")
-        print("2: Find entries")
+        print("2: Search core entries")
         print("3: Advanced search in master")
         print("0: Exit")
         mode = input("Enter 1, 2, 3 or 0: ").strip()
