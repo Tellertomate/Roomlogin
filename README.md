@@ -9,7 +9,7 @@ A solution for a school to "Login" to a classroom as a student via RFID Chips.
 ## 1. Install the requirements and repository
 #### Updating and installing the requirements:
 ```
-sudo apt update && sudo apt install python3 git nano tmux docker.io docker-compose
+sudo apt update && sudo apt install python3 git nano tmux docker.io docker-compose -y
 ```
 #### Cloning the repository and changing into it:
 ```
@@ -30,10 +30,15 @@ Then start the container:
 ```
 sudo docker-compose up -d
 ```
+
+---
+
 #### Linux:
 Documentary:
 https://www.digitalocean.com/community/tutorials/how-to-install-mariadb-on-ubuntu-20-04
 (Just use docker)
+
+---
 
 ### Create and set up the databases
 #### Master: (MYSQL)
@@ -47,6 +52,8 @@ sudo nano mastersetup.py
 ```
 sudo python mastersetup.py
 ```
+
+---
 
 #### Roomclient: (MYSQL)
 Do the same installation procedure on a different server which is going to be the roomclient and build the roomclient database.
@@ -66,33 +73,35 @@ To sync the necessary data between the databases you will need the provided chip
 ```
 cd server
 ```
-- Edit chipsync.py and fill out the host's, password's etc. AND THE ROOMID!
+Edit chipsync.py and fill out the host's, password's etc. AND THE ROOMID!
 ```
 sudo nano chipsync.py
 ```
-- Automatically execute them every 5 mins
+Automatically execute them every 5 mins
 ```
 sudo crontab -e
 ```
-- At the end, add the lines:
+At the end, add the lines:
 ```
 0 * * * * /usr/bin/python3 /path/to/chipsync.py
 0 * * * * /usr/bin/python3 /path/to/mastersync.py
 ```
+---
+
 #### Starting the client reader
-- On the Roomclient server go to /roomregister
+On the Roomclient server go to /roomregister
 ```
 cd roomregister
 ```
-- Open the login.py file and fill out the host's, password's etc.
+Open the login.py file and fill out the host's, password's etc.
 ```
 sudo nano login.py
 ```
-- Create a Tmux session
+Create a Tmux session
 ```
 sudo tmux
 ```
-- And start the script
+And start the script
 ```
 sudo python3 login.py
 ```
