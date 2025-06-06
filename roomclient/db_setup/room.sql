@@ -1,0 +1,14 @@
+CREATE DATABASE IF NOT EXISTS roomregister CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE roomregister;
+
+CREATE TABLE chips (
+    chid VARCHAR(50) NOT NULL PRIMARY KEY
+);
+
+CREATE TABLE login (
+    lfnr INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    chid VARCHAR(50) NOT NULL,
+    roomid INT NOT NULL, time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chid) REFERENCES chips(chid)
+);
