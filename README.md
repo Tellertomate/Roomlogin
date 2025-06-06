@@ -105,11 +105,8 @@ sudo python3 login.py
 ```
 
 ## 4. Filling in information
-You only edit information in the master db! Now you should fill in the coredata on the masterdb (rooms, students and chips) where you connect students and chips in the assignments table and fill in the roomid's into the corresponding login scripts.
+You only edit information in the master db! First of all you should create all students with the entrieinteractiontool, then register all the chips, after that you can set all the assignments to tell what chip belongs to which user. And then you can enter all the rooms and fill in the roomid's into the corresponding login scripts. If you want to search for an login that happend in the master db use the "Advanced search in master" tool and type in the information that you have.
 - To create, change or delete entries in the students, chips, rooms and assignments tables use the entrieinteractiontool.py
 ```
 sudo python3 entrieinteractiontool.py
 ```
-
-
-
