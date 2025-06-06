@@ -5,7 +5,7 @@ from mysql.connector import Error
 # Configuration of the master database (target)
 master_config = {
     'host': '172.18.0.2',
-    'user': 'user',
+    'user': 'adminuser',
     'password': 'YOURPASSWORD',
     'database': 'master'
 }
